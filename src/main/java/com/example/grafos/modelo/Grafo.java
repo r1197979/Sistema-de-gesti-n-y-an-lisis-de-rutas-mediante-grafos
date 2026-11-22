@@ -32,7 +32,7 @@ public class Grafo {
     }
 
     public boolean agregarVertice(int id, String nombre) {
-        String nombreFinal = Vertice.normalizarNombre(nombre, id);
+        String nombreFinal = Vertice.validarNombre(nombre, id);
         if (vertices.containsKey(id) || idsPorNombre.containsKey(nombreFinal)) {
             return false;
         }
@@ -68,7 +68,7 @@ public class Grafo {
         if (vertice == null) {
             return false;
         }
-        String nombreFinal = Vertice.normalizarNombre(nuevoNombre, id);
+        String nombreFinal = Vertice.validarNombre(nuevoNombre, id);
         Integer dueno = idsPorNombre.get(nombreFinal);
         if (dueno != null && dueno != id) {
             return false;
