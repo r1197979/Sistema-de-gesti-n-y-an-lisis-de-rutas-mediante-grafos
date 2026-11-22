@@ -12,6 +12,7 @@ public class PanelEdicion extends VBox {
 
     private Button botonVertice, botonArista;
     private Label mensaje;
+    private CheckBox opcionDirigido;
 
     private Consumer<Integer> accionVertice;
     private AccionArista accionArista;
@@ -27,6 +28,9 @@ public class PanelEdicion extends VBox {
         setPrefWidth(230);
 
         Label titulo= new Label("Edicion del grafo");
+
+        opcionDirigido = new CheckBox("Grafo dirigido");
+        opcionDirigido.setSelected(false);
 
         campoVertice = new TextField();
         campoVertice.setPromptText("Numero de vertice");
@@ -51,8 +55,19 @@ public class PanelEdicion extends VBox {
         mensaje= new Label();
         mensaje.setWrapText(true);
 
-        getChildren().addAll(titulo, new Separator(), new Label("Vertices"), campoVertice, botonVertice,
-                new Separator(), new Label("Conexiones"), campoOrigen, campoDestino, campoPeso, botonArista, mensaje);
+        Button botonLimpiar = new Button("Limpiar campos");
+        botonLimpiar.setOnAction(e -> {
+            limpiarCampos();
+            mensaje.setText("");
+        });
+
+        getChildren().addAll(titulo, new Separator(),
+                new Label("Tipo de grafo"), opcionDirigido,
+                new Separator(), new Label("Vertices"),
+                campoVertice, botonVertice,
+                new Separator(), new Label("Conexiones"),
+                campoOrigen, campoDestino, campoPeso,
+                botonArista, botonLimpiar, mensaje);
     }
 
     private void agregarVertice() {
@@ -98,7 +113,11 @@ public class PanelEdicion extends VBox {
         }
     }
 
-    // recibe las acciones que despues utilizara la clase grafo
+    // devuelve el tipo de grafo seleccionado
+    public boolean esDirigido() {
+        return opcionDirigido.isSelected();
+    }
+
     public void setAccionVertice(Consumer<Integer> accion) {
         accionVertice = accion;
         botonVertice.setDisable(accion==null);
