@@ -2,320 +2,291 @@ package com.example.grafos.modelo;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
 public class Grafo {
-    public static final double SIN_CONEXION = Double.POSITIVE_INFINITY;
 
-    private final boolean dirigido;
+    private boolean dirigido;
+    private List<Vertice> vertices; // en el orden en que se agregan
+    private Map<Integer, List<Arista>> listaAdyacencia; // id del vertice -> aristas que salen de el
 
-    private final Map<Integer, Vertice> vertices = new LinkedHashMap<>();
-
-    private final Map<String, Integer> idsPorNombre = new HashMap<>();
-
-    private final Map<Integer, Map<Integer, Arista>> adyacencia = new LinkedHashMap<>();
-
-    private final List<Arista> aristas = new ArrayList<>();
-
-    public Grafo(boolean dirigido) {
+    /*
+    Crea un grafo vacio, dirigido o no dirigido
+     */
+    public Grafo(boolean dirigido){
         this.dirigido = dirigido;
+        vertices = new ArrayList<>();
+        listaAdyacencia = new HashMap<>();
     }
 
-    public boolean esDirigido() {
+    /*
+    Indica si el grafo es dirigido
+     */
+    public boolean esDirigido(){
         return dirigido;
     }
 
-    public boolean agregarVertice(int id) {
+    /*
+    Indica si existe un vertice con ese id
+     */
+    public boolean existeVertice(int id){
+        return listaAdyacencia.containsKey(id);
+    }
+
+    /*
+    Agrega un vertice usando su id como nombre
+     */
+    public boolean agregarVertice(int id){
         return agregarVertice(id, String.valueOf(id));
     }
 
-    public boolean agregarVertice(int id, String nombre) {
-        String nombreFinal = Vertice.validarNombre(nombre, id);
-        if (vertices.containsKey(id) || idsPorNombre.containsKey(nombreFinal)) {
+    /*
+    Agrega un vertice con nombre, no se permiten id's ni nombres repetidos
+    */
+    public boolean agregarVertice(int id, String nombre){
+        nombre = Vertice.validarNombre(nombre, id);
+        if(existeVertice(id) || buscarVerticePorNombre(nombre)!= null){
             return false;
         }
-        vertices.put(id, new Vertice(id, nombreFinal));
-        idsPorNombre.put(nombreFinal, id);
-        adyacencia.put(id, new LinkedHashMap<>());
+        vertices.add(new Vertice(id, nombre));
+        listaAdyacencia.put(id, new ArrayList<>()); // empieza sin aristas
         return true;
     }
 
-    public boolean eliminarVertice(int id) {
-        Vertice vertice = vertices.remove(id);
-        if (vertice == null) {
-            return false;
-        }
-        idsPorNombre.remove(vertice.getNombre());
-        adyacencia.remove(id);
-        for (Map<Integer, Arista> salientes : adyacencia.values()) {
-            salientes.remove(id);
-        }
-        List<Arista> restantes = new ArrayList<>();
-        for (Arista arista : aristas) {
-            if (arista.getOrigen() != id && arista.getDestino() != id) {
-                restantes.add(arista);
+    /*
+    Elimina el vertice y todas las aristas que salen o llegan a el
+     */
+    public boolean eliminarVertice(int id){
+        Vertice vertice = obtenerVertice(id);
+        if(vertice==null) {return false;}
+
+        vertices.remove(vertice);
+        listaAdyacencia.remove(id); // aristas que salen del vertice
+        for(List<Arista> aristas : listaAdyacencia.values()){
+            for(int i = aristas.size() - 1; i >= 0; i--){
+                if(aristas.get(i).getDestino() == id){
+                    aristas.remove(i); // aristas que llegan al vertice
+                }
             }
         }
-        aristas.clear();
-        aristas.addAll(restantes);
         return true;
     }
 
-    public boolean cambiarNombreVertice(int id, String nuevoNombre) {
-        Vertice vertice = vertices.get(id);
-        if (vertice == null) {
+    /*
+    Cambia el nombre de un vertice si el nombre nuevo no lo usa otro vertice
+     */
+    public boolean cambiarNombreVertice(int id, String nuevoNombre){
+        Vertice vertice = obtenerVertice(id);
+        if (vertice==null) {return false;} // no existe
+
+        nuevoNombre = Vertice.validarNombre(nuevoNombre, id); // eliminar espacios
+        Vertice v = buscarVerticePorNombre(nuevoNombre);
+        if(v!=null && v.getId()!=id){ // ya hay vertice con ese nombre
             return false;
         }
-        String nombreFinal = Vertice.validarNombre(nuevoNombre, id);
-        Integer dueno = idsPorNombre.get(nombreFinal);
-        if (dueno != null && dueno != id) {
-            return false;
-        }
-        idsPorNombre.remove(vertice.getNombre());
-        vertice.setNombre(nombreFinal);
-        idsPorNombre.put(nombreFinal, id);
+        vertice.setNombre(nuevoNombre);
         return true;
     }
 
-    public boolean cambiarIdVertice(int idActual, int idNuevo) {
-        if (!vertices.containsKey(idActual)) {
-            return false;
-        }
-        if (idActual == idNuevo) {
-            return true;
-        }
-        if (vertices.containsKey(idNuevo)) {
-            return false;
-        }
-        Vertice vertice = vertices.get(idActual);
-        String nombreNuevo = vertice.getNombre();
-        if (nombreNuevo.equals(String.valueOf(idActual))) {
-            nombreNuevo = String.valueOf(idNuevo);
-            Integer dueno = idsPorNombre.get(nombreNuevo);
-            if (dueno != null && dueno != idActual) {
-                return false;
+    /*
+    Busca un vertice por id
+     */
+    public Vertice obtenerVertice(int id){
+        for(Vertice vertice : vertices){
+            if(vertice.getId()==id){
+                return vertice;
             }
-        }
-
-        List<Vertice> verticesAnteriores = new ArrayList<>(vertices.values());
-        List<Arista> aristasAnteriores = new ArrayList<>(aristas);
-        vertices.clear();
-        idsPorNombre.clear();
-        adyacencia.clear();
-        aristas.clear();
-        for (Vertice v : verticesAnteriores) {
-            if (v.getId() == idActual) {
-                agregarVertice(idNuevo, nombreNuevo);
-            } else {
-                agregarVertice(v.getId(), v.getNombre());
-            }
-        }
-        for (Arista a : aristasAnteriores) {
-            int origen = a.getOrigen() == idActual ? idNuevo : a.getOrigen();
-            int destino = a.getDestino() == idActual ? idNuevo : a.getDestino();
-            agregarArista(origen, destino, a.getPeso());
-        }
-        return true;
-    }
-
-    public boolean existeVertice(int id) {
-        return vertices.containsKey(id);
-    }
-
-    public Vertice obtenerVertice(int id) {
-        return vertices.get(id);
-    }
-
-    public Vertice buscarVerticePorNombre(String nombre) {
-        if (nombre == null) {
-            return null;
-        }
-        Integer id = idsPorNombre.get(nombre.trim());
-        return id == null ? null : vertices.get(id);
-    }
-
-    public List<Vertice> obtenerVertices() {
-        return new ArrayList<>(vertices.values());
-    }
-
-    public List<Integer> obtenerIdsVertices() {
-        return new ArrayList<>(vertices.keySet());
-    }
-
-    public int cantidadVertices() {
-        return vertices.size();
-    }
-
-    public String validarArista(int origen, int destino, double peso) {
-        if (!vertices.containsKey(origen)) {
-            return "El vértice de origen " + origen + " no existe.";
-        }
-        if (!vertices.containsKey(destino)) {
-            return "El vértice de destino " + destino + " no existe.";
-        }
-        if (origen == destino) {
-            return "No se permite conectar un vértice consigo mismo.";
-        }
-        if (Double.isNaN(peso) || Double.isInfinite(peso)) {
-            return "El peso debe ser un número.";
-        }
-        if (peso < 0) {
-            return "El peso no puede ser negativo.";
-        }
-        if (existeArista(origen, destino)) {
-            return "La conexión entre " + origen + " y " + destino + " ya existe.";
         }
         return null;
     }
 
+    /*
+    Busca un vertice por nombre
+    */
+    public Vertice buscarVerticePorNombre(String nombre){
+        if (nombre==null){return null;}
+
+        for(Vertice vertice : vertices){
+            if(vertice.getNombre().equals(nombre.trim())){
+                return vertice;
+            }
+        }
+        return null;
+    }
+
+    /*
+    Regresa una copia de la lista de vertices
+    */
+    public List<Vertice> obtenerVertices(){
+        return new ArrayList<>(vertices);
+    }
+
+    /*
+    Numero de vertices del grafo
+    */
+    public int cantidadVertices(){
+        return vertices.size();
+    }
+
+    /*
+    Numero de aristas del grafo
+     */
+    public int cantidadAristas(){
+        return obtenerAristas().size();
+    }
+
+    /*
+    Revisa si se puede agregar la arista
+     */
+    public String validarArista(int origen, int destino, double peso){
+        if(!existeVertice(origen) || !existeVertice(destino)){
+            return "Alguno o ninguno de los vértices existe";
+        }else if (origen==destino){
+            return "El vértice no se puede conectar consigo mismo";
+        }else if (peso < 0){
+            return "El peso no puede ser negativo";
+        }else if (existeArista(origen, destino)){
+            return "La conexión ya existe";
+        }
+        return null;
+    }
+
+    /*
+    Agrega una arista
+    Para grafo no dirigido debe ser bidireccional la conexion
+     */
     public boolean agregarArista(int origen, int destino, double peso) {
-        if (validarArista(origen, destino, peso) != null) {
-            return false;
-        }
-        Arista arista = new Arista(origen, destino, peso);
-        aristas.add(arista);
-        adyacencia.get(origen).put(destino, arista);
-        if (!dirigido) {
-            adyacencia.get(destino).put(origen, new Arista(destino, origen, peso));
+        if(validarArista(origen, destino, peso) != null) {return false;}
+        listaAdyacencia.get(origen).add(new Arista(origen, destino, peso));
+
+        if(!dirigido){
+            listaAdyacencia.get(destino).add(new Arista(destino, origen, peso)); // bidireccional
         }
         return true;
     }
 
-    public boolean eliminarArista(int origen, int destino) {
-        if (!existeArista(origen, destino)) {
-            return false;
-        }
-        adyacencia.get(origen).remove(destino);
-        if (!dirigido) {
-            adyacencia.get(destino).remove(origen);
-        }
-        for (int i = 0; i < aristas.size(); i++) {
-            Arista a = aristas.get(i);
-            boolean mismoSentido = a.getOrigen() == origen && a.getDestino() == destino;
-            boolean sentidoContrario = !dirigido && a.getOrigen() == destino && a.getDestino() == origen;
-            if (mismoSentido || sentidoContrario) {
-                aristas.remove(i);
-                break;
-            }
-        }
-        return true;
-    }
-
-    public boolean modificarPesoArista(int origen, int destino, double nuevoPeso) {
-        if (!existeArista(origen, destino) || Double.isNaN(nuevoPeso)
-                || Double.isInfinite(nuevoPeso) || nuevoPeso < 0) {
-            return false;
-        }
-        adyacencia.get(origen).get(destino).setPeso(nuevoPeso);
-        if (!dirigido) {
-            adyacencia.get(destino).get(origen).setPeso(nuevoPeso);
-        }
-        return true;
-    }
-
-    public boolean existeArista(int origen, int destino) {
-        Map<Integer, Arista> salientes = adyacencia.get(origen);
-        return salientes != null && salientes.containsKey(destino);
-    }
-
+    /*
+    Busca una arista dados dos vértices
+     */
     public Arista obtenerArista(int origen, int destino) {
-        Map<Integer, Arista> salientes = adyacencia.get(origen);
-        return salientes == null ? null : salientes.get(destino);
-    }
+        if(!existeVertice(origen)){return null;}
 
-    public List<Arista> obtenerAristas() {
-        return new ArrayList<>(aristas);
-    }
-
-    public List<Arista> obtenerAristasDesde(int id) {
-        Map<Integer, Arista> salientes = adyacencia.get(id);
-        if (salientes == null) {
-            return new ArrayList<>();
-        }
-        return new ArrayList<>(salientes.values());
-    }
-
-    public List<Integer> obtenerVecinos(int id) {
-        Map<Integer, Arista> salientes = adyacencia.get(id);
-        if (salientes == null) {
-            return new ArrayList<>();
-        }
-        return new ArrayList<>(salientes.keySet());
-    }
-
-    public int cantidadAristas() {
-        return aristas.size();
-    }
-
-    public double[][] crearMatriz() {
-        int n = vertices.size();
-        Map<Integer, Integer> indices = crearMapaIndices();
-        double[][] matriz = new double[n][n];
-        for (int i = 0; i < n; i++) {
-            for (int j = 0; j < n; j++) {
-                matriz[i][j] = SIN_CONEXION;
+        for(Arista arista : listaAdyacencia.get(origen)){
+            if(arista.getDestino()==destino){
+                return arista;
             }
         }
-        for (Map.Entry<Integer, Map<Integer, Arista>> fila : adyacencia.entrySet()) {
-            int i = indices.get(fila.getKey());
-            for (Arista arista : fila.getValue().values()) {
-                matriz[i][indices.get(arista.getDestino())] = arista.getPeso();
+        return null;
+    }
+
+    /*
+    Elimina una arista
+    */
+    public boolean eliminarArista(int origen, int destino) {
+        Arista arista = obtenerArista(origen, destino);
+        if(arista==null) {return false;}
+        listaAdyacencia.get(origen).remove(arista);
+
+        if(!dirigido){
+            listaAdyacencia.get(destino).remove(obtenerArista(destino, origen));
+        }
+        return true;
+    }
+
+    /*
+    Cambia el peso de una arista
+    */
+    public boolean cambiarPesoArista(int origen, int destino, double nuevoPeso) {
+        Arista arista=obtenerArista(origen, destino);
+        if(arista==null || nuevoPeso<0) {return false;}
+        arista.setPeso(nuevoPeso);
+        if (!dirigido) {
+            obtenerArista(destino, origen).setPeso(nuevoPeso); // mismo peso en el otro sentido
+        }
+        return true;
+    }
+
+    /*
+    Indica si existe una arista de origen a destino
+    */
+    public boolean existeArista(int origen, int destino){
+        return obtenerArista(origen, destino) != null;
+    }
+
+    /*
+    Regresa todas las aristas
+    */
+    public List<Arista> obtenerAristas(){
+        List<Arista> resultado = new ArrayList<>();
+        for(Vertice vertice : vertices){
+            for(Arista arista : listaAdyacencia.get(vertice.getId())){
+                if(dirigido || arista.getOrigen()<arista.getDestino()){
+                    resultado.add(arista);
+                }
+            }
+        }
+        return resultado;
+    }
+
+    /*
+    Regresa las aristas que salen de un vertice
+     */
+    public List<Arista> obtenerAristasDesde(int id){
+        if(!existeVertice(id)){return new ArrayList<>();} // no existe arista, devuelve lista vacía
+        return new ArrayList<>(listaAdyacencia.get(id)); // devuelve la lista de aristas de un vértice
+    }
+
+    /*
+    Posición del vertice en la lista de vertices y en la matriz
+     */
+    public int obtenerIndiceVertice(int id){
+        for(int i=0; i<vertices.size(); i++){
+            if(vertices.get(i).getId()==id){
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    /*
+    Crea la matriz de adyacencia
+     */
+    public double[][] crearMatriz(){
+        int num=vertices.size();
+        double[][] matriz = new double[num][num];
+
+        // llenar tabla con -1, significa que no hay arista
+        for(int i=0; i<num; i++){ //fila
+            for(int j=0; j<num; j++){ // columna
+                matriz[i][j] = -1;
+            }
+        }
+
+        // colocar pesos existentes
+        for(int i=0; i<num; i++){
+            for(Arista arista : listaAdyacencia.get(vertices.get(i).getId())){ //fila
+                int j=obtenerIndiceVertice(arista.getDestino()); // obtener columna
+                matriz[i][j]= arista.getPeso(); // colocar peso
             }
         }
         return matriz;
     }
 
-    public int obtenerIndiceVertice(int id) {
-        int indice = 0;
-        for (int idActual : vertices.keySet()) {
-            if (idActual == id) {
-                return indice;
-            }
-            indice++;
-        }
-        return -1;
-    }
-
-    public Map<Integer, Integer> crearMapaIndices() {
-        Map<Integer, Integer> indices = new HashMap<>();
-        int indice = 0;
-        for (int id : vertices.keySet()) {
-            indices.put(id, indice);
-            indice++;
-        }
-        return indices;
-    }
-
+    /*
+    Regresa la lista de adyacencia como texto, una línea por vertice
+    */
     public String mostrarListaAdyacencia() {
-        StringBuilder texto = new StringBuilder();
-        for (Map.Entry<Integer, Map<Integer, Arista>> fila : adyacencia.entrySet()) {
-            texto.append(vertices.get(fila.getKey())).append(" -> ");
-            boolean primero = true;
-            for (Arista arista : fila.getValue().values()) {
-                if (!primero) {
-                    texto.append(", ");
-                }
-                texto.append(vertices.get(arista.getDestino()))
-                        .append(" [").append(arista.getPeso()).append("]");
-                primero = false;
+        StringBuilder texto= new StringBuilder();
+        for(Vertice vertice : vertices){
+            texto.append(vertice.getNombre()).append(" -> ");
+            for(Arista arista : listaAdyacencia.get(vertice.getId())){
+                texto.append(obtenerVertice(arista.getDestino()).getNombre());
+                texto.append(" (").append(arista.getPeso()).append(")  ");
             }
-            texto.append(System.lineSeparator());
+            texto.append("\n");
         }
         return texto.toString();
     }
 
-    public void limpiar() {
-        vertices.clear();
-        idsPorNombre.clear();
-        adyacencia.clear();
-        aristas.clear();
-    }
-
-    @Override
-    public String toString() {
-        return "Grafo " + (dirigido ? "dirigido" : "no dirigido")
-                + " con " + cantidadVertices() + " vértices y " + cantidadAristas() + " aristas";
-    }
 }
