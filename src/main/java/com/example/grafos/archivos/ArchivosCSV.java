@@ -42,7 +42,7 @@ public class ArchivosCSV {
     }
 
     /*
-    Busca el vertice por su nombre y regresa su id.
+    Busca en un grafo un vertice por su nombre. Si existe regresa id, si no lo crea con id+1 y su nombre
      */
     private int identificarVertices(String nombre, Grafo grafo){
         Vertice vertice= grafo.buscarVerticePorNombre(nombre);
