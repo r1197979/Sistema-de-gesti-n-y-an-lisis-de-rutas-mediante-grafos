@@ -25,9 +25,7 @@ public class RecorridosGrafo {
             int actual = cola.poll();
             orden.add(actual);
 
-
-            //todo getAdyacentes ArrayList<Arista> adyacentes = grafo.getAdyacentes(actual);
-            for (Arista a : grafo.getAdyacentes(actual)){
+            for (Arista a : grafo.obtenerAristasDesde(actual)){
                 int vecino = a.getDestino();
                 if (visitados.add(vecino)){
                     cola.add(vecino);
@@ -56,8 +54,7 @@ public class RecorridosGrafo {
             }
             orden.add(actual);
 
-            //pendiente a agregar getAdyacentes ArrayList<Arista> adyacentes = grafo.getAdyacentes(actual);
-            ArrayList<Arista> adyacentes = grafo.getAdyacentes(actual);
+            List<Arista> adyacentes = grafo.obtenerAristasDesde(actual);
             for (int i = adyacentes.size() - 1; i >= 0; i--) {
                 int vecino = adyacentes.get(i).getDestino();
                 if (!visitados.contains(vecino)) {
@@ -72,7 +69,7 @@ public class RecorridosGrafo {
             if (grafo == null) {
                 throw new IllegalArgumentException("El grafo no puede ser nulo");
             }
-            if (!grafo.contieneVertice(inicio)) {
+            if (!grafo.existeVertice(inicio)) {
                 throw new IllegalArgumentException("El vértice inicial no existe en el grafo: " + inicio);
             }
         }
