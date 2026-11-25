@@ -10,10 +10,12 @@ public class Aplicacion extends Application {
     public void start(Stage stage) {
         VentanaPrincipal ventana = new VentanaPrincipal();
 
-        Scene escena = new Scene(ventana, 1150, 700);
+        Scene escena = new Scene(ventana, 1320, 790);
 
         stage.setTitle("Sistema de grafos");
         stage.setScene(escena);
+        stage.setMinWidth(1150);
+        stage.setMinHeight(650);
         stage.show();
     }
 
