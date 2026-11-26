@@ -1,0 +1,11 @@
+origen,destino,peso
+Biblioteca,Laboratorio,100
+Biblioteca,Cafeteria,abc
+Laboratorio,,120
+Cafeteria,Ingenieria,-80
+Cafeteria,Rectoria
+Ingenieria,Ingenieria,50
+Laboratorio,Biblioteca,100
+Biblioteca,Laboratorio,70
+Ingenieria,Gimnasio,90.5
+Rectoria,Gimnasio,110
