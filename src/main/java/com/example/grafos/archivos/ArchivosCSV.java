@@ -149,6 +149,31 @@ public class ArchivosCSV {
     }
 
     /*
+    Si la fila solo tiene un vertice y el otro esta vacio, agrega ese vertice al grafo sin conexiones.
+    Regresa true si la fila era de un vertice solo
+     */
+    private boolean agregarVerticeSinConexion(String linea, Grafo grafo){
+        String[] partes= linea.split(",");
+        String origen= "";
+        String destino= "";
+        if(partes.length > 0){
+            origen= partes[0].trim();
+        }
+        if(partes.length > 1){
+            destino= partes[1].trim();
+        }
+        if(!origen.isEmpty() && destino.isEmpty()){ // solo hay origen
+            identificarVertices(origen, grafo);
+            return true;
+        }
+        if(origen.isEmpty() && !destino.isEmpty()){ // solo hay destino
+            identificarVertices(destino, grafo);
+            return true;
+        }
+        return false; // tiene los dos vertices o ninguno
+    }
+
+    /*
     Revisa una fila completa usando metodos auxiliares de validaciones
      */
     private boolean validarRegistros(String linea, int numeroLinea, Grafo grafo){
@@ -191,6 +216,9 @@ public class ArchivosCSV {
             int numeroLinea= i + 1; // numero de linea como se ve en el archivo
             if(linea.trim().isEmpty()){ // ignorar lineas vacias
                 continue;
+            }
+            if(agregarVerticeSinConexion(linea, grafo)){ // fila con un solo vertice, se agrega sin conexion
+                continue; // pasa a la siguiente fila
             }
             if(validarRegistros(linea, numeroLinea, grafo)){ // solo importar filas validas
                 String[] partes= linea.split(",");
