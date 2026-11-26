@@ -50,6 +50,10 @@ public class ResultadoRuta {
         return sb.toString();
     }
 
+    public ArrayList<Integer> getRuta(){
+        return new ArrayList<>(ruta);
+    }
+
     public String toString(){
         if (!existeRuta){
             return "Origen: " + origen + "\nDestino: " + destino + "\nNo existe una ruta entre los vértices";
