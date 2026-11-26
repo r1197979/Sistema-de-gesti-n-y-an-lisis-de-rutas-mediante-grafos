@@ -49,8 +49,22 @@ public class ArchivosCSV {
         if(vertice != null){ // ya existe, solo se regresa su id
             return vertice.getId();
         }
+        // si el nombre es un numero y ese id esta libre, se usa como id
+        try{
+            int numero= Integer.parseInt(nombre);
+            if(!grafo.existeVertice(numero)){
+                grafo.agregarVertice(numero, nombre);
+                return numero;
+            }
+        }catch(NumberFormatException e){
+            // el nombre no es un numero, se usa el siguiente id libre
+        }
+
         // si no existe el vertice, se agrega al grafo con el sig id
         int id= grafo.cantidadVertices() + 1;
+        while(grafo.existeVertice(id)){ // por si ese id ya lo tiene otro vertice
+            id++;
+        }
         grafo.agregarVertice(id, nombre);
         return id;
     }
@@ -152,25 +166,41 @@ public class ArchivosCSV {
     Si la fila solo tiene un vertice y el otro esta vacio, agrega ese vertice al grafo sin conexiones.
     Regresa true si la fila era de un vertice solo
      */
-    private boolean agregarVerticeSinConexion(String linea, Grafo grafo){
+    private boolean agregarVerticeSinConexion(String linea, int numeroLinea, Grafo grafo){
         String[] partes= linea.split(",");
         String origen= "";
         String destino= "";
+        String textoPeso= "";
         if(partes.length > 0){
             origen= partes[0].trim();
         }
         if(partes.length > 1){
             destino= partes[1].trim();
         }
+        if(partes.length > 2){
+            textoPeso= partes[2].trim();
+        }
         if(!origen.isEmpty() && destino.isEmpty()){ // solo hay origen
             identificarVertices(origen, grafo);
+            avisarConexionIncompleta(origen, textoPeso, numeroLinea);
             return true;
         }
         if(origen.isEmpty() && !destino.isEmpty()){ // solo hay destino
             identificarVertices(destino, grafo);
+            avisarConexionIncompleta(destino, textoPeso, numeroLinea);
             return true;
         }
         return false; // tiene los dos vertices o ninguno
+    }
+
+    /*
+    Si la fila de un vertice solo traia peso, era una conexion a la que le falta un vertice.
+    El vertice si se agrega, pero se avisa que la conexion no se pudo crear
+     */
+    private void avisarConexionIncompleta(String nombre, String textoPeso, int numeroLinea){
+        if(!textoPeso.isEmpty()){
+            listaExcepciones.add("Linea "+numeroLinea+", la conexion tiene un vertice vacio, solo se agrego el vertice "+nombre);
+        }
     }
 
     /*
@@ -217,7 +247,7 @@ public class ArchivosCSV {
             if(linea.trim().isEmpty()){ // ignorar lineas vacias
                 continue;
             }
-            if(agregarVerticeSinConexion(linea, grafo)){ // fila con un solo vertice, se agrega sin conexion
+            if(agregarVerticeSinConexion(linea, numeroLinea, grafo)){ // fila con un solo vertice, se agrega sin conexion
                 continue; // pasa a la siguiente fila
             }
             if(validarRegistros(linea, numeroLinea, grafo)){ // solo importar filas validas
