@@ -253,25 +253,18 @@ public class ControladorGrafo {
         double tiempoMs = (System.nanoTime() - inicio) / 1000000.0;
         List<String> errores = archivosCSV.obtenerExcepciones();
 
-        // rechaza la importacion completa si encuentra errores
-        if(importado == null || !errores.isEmpty()) {
-            StringBuilder texto = new StringBuilder("El archivo CSV contiene errores:\n\n");
-
-            for(String error : errores) {
-                texto.append(error).append("\n");
-            }
-
-            texto.append("\nNo se importo el grafo.");
-            resultados.mostrarResultado(texto.toString());
-            informar("Existe un error en el archivo CSV");
+        if(importado==null) {
+            resultados.mostrarResultado("No se pudo importar " + archivo.getName() +
+                    "\n" + String.join("\n", errores));
+            informar("No se pudo leer el archivo CSV");
             return;
         }
 
         for(Arista arista : importado.obtenerAristas()) {
             if(!Double.isFinite(arista.getPeso())) {
-                resultados.mostrarResultado("El archivo CSV contiene errores:\n\n" +
-                        "Se encontro un peso NaN o Infinity.\n\nNo se importo el grafo.");
-                informar("Existe un error en el archivo CSV");
+                resultados.mostrarResultado("El archivo contiene pesos NaN o Infinity. " +
+                        "Corrija esos valores antes de importar");
+                informar("CSV rechazado por pesos no finitos");
                 return;
             }
         }
@@ -285,11 +278,22 @@ public class ControladorGrafo {
         StringBuilder informe = new StringBuilder("Archivo: ").append(archivo.getName());
         informe.append("\n").append(archivosCSV.informeGrafo(grafo));
 
+        if(!errores.isEmpty()) {
+            informe.append("\n\nRegistros omitidos (" ).append(errores.size()).append("):\n");
+            for(String error : errores) {
+                informe.append(error).append("\n");
+            }
+        }
+
         resultados.mostrarResultado(informe.toString());
         registrarMedicion(new ResultadoMedicion("Importar CSV", descripcionActual(),
                 grafo.cantidadVertices(), grafo.cantidadAristas(), 1, tiempoMs, tiempoMs, tiempoMs));
 
-        informar("Archivo CSV importado correctamente");
+        if(errores.isEmpty()) {
+            informar("Archivo CSV importado correctamente");
+        } else {
+            informar("CSV importado con " + errores.size() + " registros omitidos. Revise Recorridos");
+        }
     }
 
     private void exportarCsv(File archivo) {
