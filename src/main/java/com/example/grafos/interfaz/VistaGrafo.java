@@ -200,6 +200,22 @@ public class VistaGrafo extends Pane {
         }
     }
 
+    // resalta solo los vertices visitados sin marcar conexiones
+    public void resaltarVertices(List<Integer> visitados) {
+        resaltarCamino(null);
+
+        if(visitados==null) {
+            return;
+        }
+
+        for(Integer id : visitados) {
+            Circle circulo = circulos.get(id);
+            if(circulo!=null) {
+                circulo.setFill(Color.rgb(28, 36, 34));
+            }
+        }
+    }
+
     public void limpiarVista() {
         capaAristas.getChildren().clear();
         capaVertices.getChildren().clear();

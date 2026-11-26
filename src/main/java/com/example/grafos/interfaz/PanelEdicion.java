@@ -21,6 +21,7 @@ public class PanelEdicion extends VBox {
     private Button botonVertice, botonModificarVertice, botonEliminarVertice;
     private Button botonArista, botonModificarArista, botonEliminarArista;
     private Button botonBfs, botonDfs, botonDijkstra, botonOrdenar;
+    private Button botonPruebas;
 
     private CheckBox opcionDirigido;
     private ComboBox<String> metodoOrden, datoOrden;
@@ -30,7 +31,7 @@ public class PanelEdicion extends VBox {
     private Consumer<File> accionImportar, accionExportar;
 
     private Consumer<Integer> accionVertice, accionEliminarVertice;
-    private BiConsumer<Integer,Integer> accionModificarVertice;
+    private BiConsumer<Integer,String> accionModificarVertice;
 
     private AccionArista accionArista, accionModificarArista;
     private BiConsumer<Integer,Integer> accionEliminarArista;
@@ -38,6 +39,7 @@ public class PanelEdicion extends VBox {
     private Consumer<Integer> accionBfs, accionDfs;
     private BiConsumer<Integer,Integer> accionDijkstra;
     private BiConsumer<String,String> accionOrdenar;
+    private Runnable accionPruebas;
 
     // permite conectar el boton con la accion de agregar una arista
     public interface AccionArista {
@@ -76,7 +78,7 @@ public class PanelEdicion extends VBox {
         botonImportar.setOnAction(e -> seleccionarArchivo(false));
         botonExportar.setOnAction(e -> seleccionarArchivo(true));
 
-        VBox archivos = crearGrupo("Archivos y tipo de grafo",
+        TitledPane archivos = crearGrupo("1. Grafo y archivos",
                 opcionDirigido, botonNuevo,
                 filaBotones(botonImportar, botonExportar));
 
@@ -84,12 +86,12 @@ public class PanelEdicion extends VBox {
         campoVertice.setPromptText("Numero de vertice");
 
         campoNuevoId= new TextField();
-        campoNuevoId.setPromptText("Nuevo numero para modificar");
+        campoNuevoId.setPromptText("Nuevo nombre del vertice");
 
         // los botones se activaran cuando tengan una accion asignada
         botonVertice = new Button("Agregar vertice");
-        botonModificarVertice = new Button("Modificar");
-        botonEliminarVertice = new Button("Eliminar");
+        botonModificarVertice = new Button("Cambiar nombre");
+        botonEliminarVertice = new Button("Eliminar vertice");
 
         botonVertice.setDisable(true);
         botonModificarVertice.setDisable(true);
@@ -99,8 +101,9 @@ public class PanelEdicion extends VBox {
         botonModificarVertice.setOnAction(e -> modificarVertice());
         botonEliminarVertice.setOnAction(e -> procesarVertice(accionEliminarVertice));
 
-        VBox vertices = crearGrupo("Vertices",
-                campoVertice, campoNuevoId,
+        TitledPane vertices = crearGrupo("2. Vertices",
+                crearEtiqueta("ID del vertice"), campoVertice,
+                crearEtiqueta("Nuevo nombre (solo al modificar)"), campoNuevoId,
                 filaBotones(botonVertice, botonModificarVertice, botonEliminarVertice));
 
         campoOrigen=new TextField();
@@ -113,7 +116,7 @@ public class PanelEdicion extends VBox {
 
         botonArista = new Button("Agregar conexion");
         botonModificarArista = new Button("Modificar peso");
-        botonEliminarArista = new Button("Eliminar");
+        botonEliminarArista = new Button("Eliminar conexion");
 
         botonArista.setDisable(true);
         botonModificarArista.setDisable(true);
@@ -123,8 +126,10 @@ public class PanelEdicion extends VBox {
         botonModificarArista.setOnAction(e -> procesarArista(accionModificarArista));
         botonEliminarArista.setOnAction(e -> eliminarArista());
 
-        VBox conexiones = crearGrupo("Conexiones",
-                campoOrigen, campoDestino, campoPeso,
+        TitledPane conexiones = crearGrupo("3. Conexiones",
+                crearEtiqueta("Vertice origen"), campoOrigen,
+                crearEtiqueta("Vertice destino"), campoDestino,
+                crearEtiqueta("Peso de la conexion"), campoPeso,
                 filaBotones(botonArista, botonModificarArista, botonEliminarArista));
 
         campoInicio = new TextField();
@@ -145,8 +150,9 @@ public class PanelEdicion extends VBox {
         botonDfs.setOnAction(e -> ejecutarRecorrido(accionDfs));
         botonDijkstra.setOnAction(e -> ejecutarDijkstra());
 
-        VBox busquedas= crearGrupo("Busqueda y rutas",
-                campoInicio, campoFinal,
+        TitledPane busquedas= crearGrupo("4. Recorridos y rutas",
+                crearEtiqueta("Vertice inicial"), campoInicio,
+                crearEtiqueta("Destino (solo Dijkstra)"), campoFinal,
                 filaBotones(botonBfs, botonDfs, botonDijkstra));
 
         metodoOrden = new ComboBox<>();
@@ -155,7 +161,7 @@ public class PanelEdicion extends VBox {
         metodoOrden.setMaxWidth(Double.MAX_VALUE);
 
         datoOrden=new ComboBox<>();
-        datoOrden.getItems().addAll("Vertices por ID", "Conexiones por peso");
+        datoOrden.getItems().addAll("Vertices por nombre", "Conexiones por peso");
         datoOrden.getSelectionModel().selectFirst();
         datoOrden.setMaxWidth(Double.MAX_VALUE);
 
@@ -168,8 +174,19 @@ public class PanelEdicion extends VBox {
             }
         });
 
-        VBox ordenamientos = crearGrupo("Ordenamientos",
-                metodoOrden, datoOrden, botonOrdenar);
+        botonPruebas = new Button("Pruebas 20, 100, 500, 1000");
+        botonPruebas.setDisable(true);
+        botonPruebas.setOnAction(e -> {
+            if(accionPruebas!=null) {
+                accionPruebas.run();
+            }
+        });
+
+        TitledPane ordenamientos = crearGrupo("5. Ordenamientos",
+                crearEtiqueta("Metodo"), metodoOrden,
+                crearEtiqueta("Datos a ordenar"), datoOrden, botonOrdenar);
+
+        TitledPane pruebas = crearGrupo("6. Pruebas de rendimiento", botonPruebas);
 
         mensaje= new Label();
         mensaje.setTextFill(Color.rgb(224, 235, 228));
@@ -181,23 +198,33 @@ public class PanelEdicion extends VBox {
             mensaje.setText("");
         });
 
-        getChildren().addAll(titulo, archivos, vertices, conexiones,
-                busquedas, ordenamientos, botonLimpiar, mensaje);
+        Accordion secciones = new Accordion();
+        secciones.getPanes().addAll(archivos, vertices, conexiones,
+                busquedas, ordenamientos, pruebas);
+        secciones.setExpandedPane(archivos);
+
+        getChildren().addAll(titulo, secciones, botonLimpiar, mensaje);
     }
 
-    private VBox crearGrupo(String titulo, Node... controles) {
-        Label nombre = new Label(titulo);
-        nombre.setTextFill(Color.WHITE);
-
+    private TitledPane crearGrupo(String titulo, Node... controles) {
         VBox grupo=new VBox(8);
         grupo.setPadding(new Insets(12));
 
         grupo.setBackground(new Background(new BackgroundFill(
                 Color.rgb(69, 85, 78), new CornerRadii(5), Insets.EMPTY)));
 
-        grupo.getChildren().add(nombre);
         grupo.getChildren().addAll(controles);
-        return grupo;
+
+        TitledPane seccion = new TitledPane(titulo, grupo);
+        seccion.setAnimated(false);
+        seccion.setMaxWidth(Double.MAX_VALUE);
+        return seccion;
+    }
+
+    private Label crearEtiqueta(String texto) {
+        Label etiqueta = new Label(texto);
+        etiqueta.setTextFill(Color.WHITE);
+        return etiqueta;
     }
 
     private FlowPane filaBotones(Button... botones) {
@@ -263,9 +290,13 @@ public class PanelEdicion extends VBox {
             return;
         }
 
-        Integer nuevo=leerEntero(campoNuevoId);
+        String nuevo= campoNuevoId.getText().trim();
+        if(nuevo.isEmpty()) {
+            mostrarMensaje("Ingrese un nuevo nombre");
+            return;
+        }
 
-        if (nuevo != null && accionModificarVertice!=null) {
+        if (accionModificarVertice!=null) {
             mensaje.setText("");
             accionModificarVertice.accept(actual, nuevo);
         }
@@ -418,7 +449,7 @@ public class PanelEdicion extends VBox {
         botonVertice.setDisable(accion==null);
     }
 
-    public void setAccionModificarVertice(BiConsumer<Integer,Integer> accion) {
+    public void setAccionModificarVertice(BiConsumer<Integer,String> accion) {
         accionModificarVertice=accion;
         botonModificarVertice.setDisable(accion == null);
     }
@@ -461,6 +492,11 @@ public class PanelEdicion extends VBox {
     public void setAccionOrdenar(BiConsumer<String,String> accion) {
         accionOrdenar=accion;
         botonOrdenar.setDisable(accion == null);
+    }
+
+    public void setAccionPruebas(Runnable accion) {
+        accionPruebas=accion;
+        botonPruebas.setDisable(accion == null);
     }
 
     public void mostrarMensaje(String texto) {

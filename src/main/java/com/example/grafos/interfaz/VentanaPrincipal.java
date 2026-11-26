@@ -13,6 +13,7 @@ public class VentanaPrincipal extends BorderPane {
     private VistaGrafo vistaGrafo;
     private PanelResultados panelResultados;
     private PanelGraficas panelGraficas;
+    private ControladorGrafo controlador;
 
     private Label estado, contador;
 
@@ -70,6 +71,8 @@ public class VentanaPrincipal extends BorderPane {
         BorderPane.setMargin(scrollEdicion, new Insets(10));
         BorderPane.setMargin(pestanas,new Insets(10));
         BorderPane.setMargin(panelResultados, new Insets(10));
+
+        controlador = new ControladorGrafo(this);
     }
 
     public void actualizarEstado(String texto) {
