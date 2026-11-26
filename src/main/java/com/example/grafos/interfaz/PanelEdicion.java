@@ -191,7 +191,7 @@ public class PanelEdicion extends VBox {
                 busquedas, ordenamientos);
         secciones.setExpandedPane(archivos);
 
-        getChildren().addAll(titulo, secciones, botonLimpiar);
+        getChildren().addAll(titulo, secciones, botonLimpiar, mensaje);
     }
 
     private TitledPane crearGrupo(String titulo, Node... controles) {
