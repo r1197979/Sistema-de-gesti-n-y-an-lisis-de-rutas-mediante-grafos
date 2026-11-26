@@ -21,7 +21,6 @@ public class PanelEdicion extends VBox {
     private Button botonVertice, botonModificarVertice, botonEliminarVertice;
     private Button botonArista, botonModificarArista, botonEliminarArista;
     private Button botonBfs, botonDfs, botonDijkstra, botonOrdenar;
-    private Button botonPruebas;
 
     private CheckBox opcionDirigido;
     private ComboBox<String> metodoOrden, datoOrden;
@@ -39,7 +38,6 @@ public class PanelEdicion extends VBox {
     private Consumer<Integer> accionBfs, accionDfs;
     private BiConsumer<Integer,Integer> accionDijkstra;
     private BiConsumer<String,String> accionOrdenar;
-    private Runnable accionPruebas;
 
     // permite conectar el boton con la accion de agregar una arista
     public interface AccionArista {
@@ -174,19 +172,9 @@ public class PanelEdicion extends VBox {
             }
         });
 
-        botonPruebas = new Button("Pruebas 20, 100, 500, 1000");
-        botonPruebas.setDisable(true);
-        botonPruebas.setOnAction(e -> {
-            if(accionPruebas!=null) {
-                accionPruebas.run();
-            }
-        });
-
         TitledPane ordenamientos = crearGrupo("5. Ordenamientos",
                 crearEtiqueta("Metodo"), metodoOrden,
                 crearEtiqueta("Datos a ordenar"), datoOrden, botonOrdenar);
-
-        TitledPane pruebas = crearGrupo("6. Pruebas de rendimiento", botonPruebas);
 
         mensaje= new Label();
         mensaje.setTextFill(Color.rgb(224, 235, 228));
@@ -200,10 +188,10 @@ public class PanelEdicion extends VBox {
 
         Accordion secciones = new Accordion();
         secciones.getPanes().addAll(archivos, vertices, conexiones,
-                busquedas, ordenamientos, pruebas);
+                busquedas, ordenamientos);
         secciones.setExpandedPane(archivos);
 
-        getChildren().addAll(titulo, secciones, botonLimpiar, mensaje);
+        getChildren().addAll(titulo, secciones, botonLimpiar);
     }
 
     private TitledPane crearGrupo(String titulo, Node... controles) {
@@ -492,11 +480,6 @@ public class PanelEdicion extends VBox {
     public void setAccionOrdenar(BiConsumer<String,String> accion) {
         accionOrdenar=accion;
         botonOrdenar.setDisable(accion == null);
-    }
-
-    public void setAccionPruebas(Runnable accion) {
-        accionPruebas=accion;
-        botonPruebas.setDisable(accion == null);
     }
 
     public void mostrarMensaje(String texto) {

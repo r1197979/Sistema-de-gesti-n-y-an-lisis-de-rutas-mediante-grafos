@@ -11,7 +11,6 @@ import com.example.grafos.modelo.Arista;
 import com.example.grafos.modelo.Grafo;
 import com.example.grafos.modelo.Vertice;
 
-import javafx.concurrent.Task;
 import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonType;
 
@@ -34,7 +33,6 @@ public class ControladorGrafo {
     private Ordenamientos ordenamientos = new Ordenamientos();
     private AnalisisTiempos analisisTiempos = new AnalisisTiempos();
     private List<ResultadoMedicion> mediciones = new ArrayList<>();
-    private boolean pruebasEnCurso;
 
     public ControladorGrafo(VentanaPrincipal ventana) {
         this.ventana = ventana;
@@ -68,7 +66,7 @@ public class ControladorGrafo {
         edicion.setAccionDfs(inicio -> ejecutarDfs(inicio));
         edicion.setAccionDijkstra((origen,destino) -> ejecutarDijkstra(origen,destino));
         edicion.setAccionOrdenar((metodo, dato) -> ordenarDatos(metodo, dato));
-        edicion.setAccionPruebas(() -> ejecutarPruebas());
+        vista.setAccionSeleccionVertice(id -> mostrarInfoVertice(id));
 
         resultados.setAccionVerMatriz(() ->
                 resultados.mostrarMatriz(generarTextoMatriz()));
@@ -445,85 +443,6 @@ public class ControladorGrafo {
         }
     }
 
-    private void ejecutarPruebas() {
-        if(pruebasEnCurso) {
-            informar("Las pruebas ya se estan ejecutando");
-            return;
-        }
-
-        pruebasEnCurso=true;
-        informar("Ejecutando pruebas reales con 20, 100, 500 y 1000 vertices");
-
-        Task<List<ResultadoMedicion>> tarea = new Task<>() {
-            @Override
-            protected List<ResultadoMedicion> call() {
-                return medirTamanos();
-            }
-        };
-
-        tarea.setOnSucceeded(e -> {
-            pruebasEnCurso=false;
-            mediciones.addAll(tarea.getValue());
-            actualizarMediciones();
-            resultados.abrirMediciones();
-            informar("Pruebas terminadas. Revise Tiempos y Graficas");
-        });
-
-        tarea.setOnFailed(e -> {
-            pruebasEnCurso=false;
-            informar("Error en las pruebas: " + tarea.getException().getMessage());
-        });
-
-        Thread hilo= new Thread(tarea, "pruebas-grafos");
-        hilo.setDaemon(true);
-        hilo.start();
-    }
-
-    // genera grafos de ensayo independientes del grafo de la interfaz
-    private List<ResultadoMedicion> medirTamanos() {
-        List<ResultadoMedicion> resultadosPruebas = new ArrayList<>();
-        int[] tamanos = {20, 100, 500, 1000};
-
-        for(int n : tamanos) {
-            Grafo prueba=new Grafo(true);
-            for(int i=0; i<n; i++) {
-                prueba.agregarVertice(i);
-            }
-
-            ArrayList<Arista> conexiones = new ArrayList<>();
-            int[] saltos = {1, 5, 7};
-            for(int i=0; i<n; i++) {
-                for(int salto : saltos) {
-                    int destino=(i+salto)%n;
-                    double peso=1+salto;
-                    prueba.agregarArista(i, destino, peso);
-                    conexiones.add(new Arista(i, destino, peso));
-                }
-            }
-
-            String descripcion="Prueba " + n + " vertices";
-            resultadosPruebas.add(analisisTiempos.medirConstruccion(descripcion,
-                    n, conexiones, () -> new Grafo(true)));
-            resultadosPruebas.add(analisisTiempos.medirBFS(prueba, 0, descripcion));
-            resultadosPruebas.add(analisisTiempos.medirDFS(prueba, 0, descripcion));
-            resultadosPruebas.add(analisisTiempos.medirDijkstra(prueba, 0, n-1, descripcion));
-
-            Arista[] aristas= prueba.obtenerAristas().toArray(new Arista[0]);
-            Vertice[] vertices= prueba.obtenerVertices().toArray(new Vertice[0]);
-
-            resultadosPruebas.add(analisisTiempos.medir("QuickSort aristas", descripcion,
-                    n, aristas.length, () -> ordenamientos.quickSortAristas(aristas.clone())));
-            resultadosPruebas.add(analisisTiempos.medir("Shell Sort aristas", descripcion,
-                    n, aristas.length, () -> ordenamientos.shellSortAristas(aristas.clone())));
-            resultadosPruebas.add(analisisTiempos.medir("QuickSort vertices", descripcion,
-                    n, aristas.length, () -> ordenamientos.quickSortVertices(vertices.clone())));
-            resultadosPruebas.add(analisisTiempos.medir("Shell Sort vertices", descripcion,
-                    n, aristas.length, () -> ordenamientos.shellSortVertices(vertices.clone())));
-        }
-
-        return resultadosPruebas;
-    }
-
     // actualiza el dibujo y las tablas con los datos reales
     private void actualizarVista() {
         resultados.limpiarRecorridos();
@@ -557,6 +476,28 @@ public class ControladorGrafo {
 
         ventana.actualizarConteo(
                 grafo.cantidadVertices(), grafo.cantidadAristas());
+    }
+
+    private void mostrarInfoVertice(int id) {
+        Vertice v = grafo.obtenerVertice(id);
+        if(v==null) {
+            return;
+        }
+
+        int salientes = grafo.obtenerAristasDesde(id).size();
+        int entrantes=0;
+        for(Arista arista : grafo.obtenerAristas()) {
+            if(arista.getDestino()==id) {
+                entrantes++;
+            }
+        }
+        String texto = "Vertice " + v.getNombre() + " (ID " + id + ")";
+        if(grafo.esDirigido()) {
+            texto += " | Salientes: " + salientes + " | Entrantes: " + entrantes;
+        } else {
+            texto += " | Conexiones: " + salientes;
+        }
+        ventana.actualizarEstado(texto);
     }
 
     private String generarTextoMatriz() {
