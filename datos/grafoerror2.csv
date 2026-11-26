@@ -1,0 +1,13 @@
+origen,destino,peso
+Biblioteca,Laboratorio,100
+Laboratorio,Cafeteria,80
+Cafeteria,Ingenieria,60
+Auditorio,,
+,Estacionamiento,
+Gimnasio,,50
+Ingenieria,Rectoria,abc
+Rectoria,Biblioteca,-20
+Cafeteria,Cafeteria,30
+Biblioteca,Laboratorio,90
+,,40
+Ingenieria,Biblioteca,70
